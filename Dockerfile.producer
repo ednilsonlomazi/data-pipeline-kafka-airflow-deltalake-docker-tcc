@@ -1,0 +1,11 @@
+FROM python:3.10-slim
+
+USER root
+
+RUN apt-get update && apt-get install -y gcc python3-dev && apt-get clean
+RUN pip install confluent-kafka pandas
+
+WORKDIR /app
+COPY ./scripts/kafka_producer/* .
+
+CMD ["python", "-u", "main.py"]

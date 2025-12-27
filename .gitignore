@@ -1,0 +1,25 @@
+# Python (Arquivos temporários que o Python cria na sua pasta local)
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# ----------------------------------------------------------------
+data/
+kafka/
+datalakehouse/
+*.save.*
+postgres_data/
+remove_volumes_kafka.sh
+dev/
+
+# ---------------------- Airflow ----------------------------
+# Ignora tudo do Airflow que é gerado automaticamente
+airflow/logs/
+airflow/plugins/
+airflow/config/
+airflow/airflow.db
+airflow/webserver_config.py
+
+# GARANTE que a pasta de dags NÃO seja ignorada
+!airflow/dags/
