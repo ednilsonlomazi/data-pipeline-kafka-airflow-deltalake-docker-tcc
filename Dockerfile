@@ -14,4 +14,4 @@ RUN export JAVA_HOME
 USER airflow
 
 # Instala as bibliotecas do Python
-RUN pip install pyspark==3.5.0 delta-spark==3.0.0
+RUN pip install pyspark==3.5.0 delta-spark==3.0.0 pendulum

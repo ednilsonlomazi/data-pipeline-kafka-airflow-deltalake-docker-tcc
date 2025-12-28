@@ -12,6 +12,8 @@ datalakehouse/
 postgres_data/
 remove_volumes_kafka.sh
 dev/
+.env
+
 
 # ---------------------- Airflow ----------------------------
 # Ignora tudo do Airflow que é gerado automaticamente

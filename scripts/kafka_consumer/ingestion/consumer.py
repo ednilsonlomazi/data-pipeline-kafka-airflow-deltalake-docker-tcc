@@ -48,7 +48,7 @@ class TraficConsumer:
                     data = json.loads(msg.value().decode('utf-8'))
                     
                     # Define nome do arquivo baseado em milisegundos (UniX Epock) e salva
-                    filename = f"msg_{int(time.time() * 1000)}.json"
+                    filename = f"msg_container_docker_{int(time.time() * 1000)}.json"
                     file_path = os.path.join(path, filename)
                     with open(file_path, 'w', encoding='utf-8') as f:
                         json.dump(data, f, ensure_ascii=False)
