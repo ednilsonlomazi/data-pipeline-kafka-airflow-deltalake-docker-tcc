@@ -1,3 +1,6 @@
+*_teste_*
+minio/
+
 # Python (Arquivos temporários que o Python cria na sua pasta local)
 __pycache__/
 *.py[cod]

@@ -1,62 +1,49 @@
-import json
-import os
-import time
-from confluent_kafka import Consumer, KafkaError
-from multiprocessing import Process
+from pyspark.sql import SparkSession
 
-class TraficConsumer:
 
+class SparkRawIngestion:
     def __init__(self, bootstrap_servers='kafka:29092'):
         self.bootstrap_servers = bootstrap_servers
+        # A SparkSession já configurada com os JARs instalados no Docker
+        self.spark = SparkSession.builder \
+            .appName("KafkaToRaw-Streaming") \
+            .config("spark.driver.extraJavaOptions", "-Duser.home=/app -Djava.io.tmpdir=/tmp") \
+            .config("spark.executor.extraJavaOptions", "-Duser.home=/app -Djava.io.tmpdir=/tmp") \
+            .config("spark.jars.ivy", "/app/.ivy2") \
+            .config("spark.hadoop.fs.s3a.endpoint", "http://minio-storage:9000") \
+            .config("spark.hadoop.fs.s3a.access.key", "admin") \
+            .config("spark.hadoop.fs.s3a.secret.key", "password123") \
+            .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+            .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+            .getOrCreate()
 
-    def run_consumer(self, topic_name, output_folder):
-        """Método que será executado por cada processo de consumo"""
+    def process_topic_to_raw(self, topic_name, wait=True):
+        print(f"Iniciando ingestão streaming do tópico: {topic_name}")
+
+        # 1. Leitura do Kafka em tempo real
+        # O Spark trata o tópico como uma tabela que não para de crescer
+        df_kafka = self.spark.readStream \
+            .format("kafka") \
+            .option("kafka.bootstrap.servers", self.bootstrap_servers) \
+            .option("subscribe", topic_name) \
+            .option("startingOffsets", "earliest") \
+            .load()
+
+        # 2. Transformação básica (O Kafka envia os dados em binário na coluna 'value')
+        # Converte o binário para String (JSON)
+        df_raw = df_kafka.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)", "topic", "partition", "offset", "timestamp")
+
+        # 3. Escrita no MinIO em formato Delta
+        # O 'checkpointLocation' guarda o estado do consumo no MinIO
+        query = df_raw.writeStream \
+            .format("delta") \
+            .queryName(topic_name) \
+            .outputMode("append") \
+            .option("checkpointLocation", f"s3a://raw/checkpoints/{topic_name}") \
+            .start(f"s3a://raw/{topic_name}")
         
-        conf = {
-            'bootstrap.servers': self.bootstrap_servers,
-            'group.id': f'grupo-{topic_name}', 
-            'auto.offset.reset': 'earliest',
-            'enable.auto.commit': True
-        }
+        if wait:
+            query.awaitTermination()
 
-        consumer = Consumer(conf)
-        consumer.subscribe([topic_name])
-
-        path = os.path.join(output_folder, topic_name)
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-        print(f"Processo iniciado: Consumindo {topic_name}...")
-
-        try:
-            while True:
-                # por 1 segundo, tenta ler uma mensagem
-                msg = consumer.poll(1.0)
-
-                if msg is None:
-                    continue
-                if msg.error():
-                    # se leu todas as mensagem e chegou ao fim, continua, senao eh um erro fatal
-                    if msg.error().code() == KafkaError._PARTITION_EOF:
-                        continue
-                    else:
-                        print(f"Erro Fatal no {topic_name}: {msg.error()}")
-                        break
-
-                try:
-                    # decodifica os bytes (json) em string e armazena e converte para dict
-                    data = json.loads(msg.value().decode('utf-8'))
-                    
-                    # Define nome do arquivo baseado em milisegundos (UniX Epock) e salva
-                    filename = f"msg_container_docker_{int(time.time() * 1000)}.json"
-                    file_path = os.path.join(path, filename)
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, ensure_ascii=False)
-
-                except Exception as e:
-                    print(f"Erro ao processar no {topic_name}: {e}")
-
-        except KeyboardInterrupt:
-            print(f"Parando consumidor do {topic_name}...")
-        finally:
-            consumer.close()
+        # Mantém o processo vivo escutando o Kafka
+        return query

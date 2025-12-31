@@ -14,13 +14,17 @@ OUTPUT_PATH = f"{BASE_PATH}/trusted/{TABLE_NAME}"
 
 
 
-# Configuração essencial para o Spark funcionar com Delta dentro do Docker
 builder = SparkSession.builder \
-    .appName("RawToTrusted") \
+    .appName("Teste-Minio-Delta") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
     .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-    .config("spark.sql.warehouse.dir", "/opt/airflow/datalake/warehouse") \
-    .config("spark.driver.extraJavaOptions", "-Divy.cache.dir=/tmp -Divy.home=/tmp")
+    .config("spark.hadoop.fs.s3a.endpoint", "http://ct-minio:9000") \
+    .config("spark.hadoop.fs.s3a.access.key", "admin") \
+    .config("spark.hadoop.fs.s3a.secret.key", "password123") \
+    .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false") \
+    .getOrCreate()
 
 # Isso baixa as dependências do Delta Lake automaticamente
 spark = configure_spark_with_delta_pip(builder).getOrCreate()

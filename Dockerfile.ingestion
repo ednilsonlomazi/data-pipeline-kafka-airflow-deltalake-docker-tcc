@@ -1,12 +1,70 @@
-# Dockerfile.ingestion
-FROM python:3.10-slim
+# Usando Ubuntu como base (mais estável para pacotes Java/Python)
+FROM ubuntu:22.04
 
 USER root
 
-RUN apt-get update && apt-get install -y gcc python3-dev && apt-get clean
-RUN pip install confluent-kafka
+# Evitar que o instalador peça zona horária ou interações
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar Python, Java 17, Curl e dependências
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    openjdk-17-jdk \
+    curl \
+    procps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Definir JAVA_HOME para o Ubuntu
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$PATH"
+# ... (parte anterior do Dockerfile igual)
+
+# Instalar PySpark e Delta
+RUN pip3 install --no-cache-dir pyspark==3.5.0 delta-spark==3.0.0
+
+
+# 1. (Padrão Ubuntu Root - caminhoo para salvar os jars)
+ENV SPARK_JARS_DIR=/usr/local/lib/python3.10/dist-packages/pyspark/jars
+
+# 2. Criamos a pasta explicitamente (O 'curl' falha se a pasta não existir)
+RUN mkdir -p ${SPARK_JARS_DIR}
+
+# 3. Baixamos um por um. Se um falhar, saberemos exatamente qual foi.
+# Usamos o sinal de continuação \ mas cada comando é testado.
+RUN curl -f -sS -L https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar -o ${SPARK_JARS_DIR}/hadoop-aws-3.3.4.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar -o ${SPARK_JARS_DIR}/aws-java-sdk-bundle-1.12.262.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.0.0/delta-spark_2.12-3.0.0.jar -o ${SPARK_JARS_DIR}/delta-spark_2.12-3.0.0.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/io/delta/delta-storage/3.0.0/delta-storage-3.0.0.jar -o ${SPARK_JARS_DIR}/delta-storage-3.0.0.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.5.0/spark-sql-kafka-0-10_2.12-3.5.0.jar -o ${SPARK_JARS_DIR}/spark-sql-kafka-0-10_2.12-3.5.0.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/3.5.0/kafka-clients-3.5.0.jar -o ${SPARK_JARS_DIR}/kafka-clients-3.5.0.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.11.1/commons-pool2-2.11.1.jar -o ${SPARK_JARS_DIR}/commons-pool2-2.11.1.jar
+
+# 1. Criar pastas de trabalho e dar permissões
+RUN mkdir -p /app/.ivy2 /tmp/spark-events && chmod -R 777 /app/.ivy2 /tmp/spark-events
+
+# 2. Definir variáveis de ambiente para caminhos absolutos
+ENV HOME=/app
+ENV IVY_PACKAGE_DIR=/app/.ivy2
+# Esta linha força o Java a entender que o "home" é /app, resolvendo o erro do Ivy
+ENV SPARK_OPTS="--driver-java-options=-Duser.home=/app"
+
+# Forçar a criação do diretório e permissão total
+RUN mkdir -p /app/.ivy2 && chmod -R 777 /app/.ivy2
+
+# Tente adicionar esta linha para definir o diretório de trabalho do Java
+ENV SPARK_OPTS="--driver-java-options=-Duser.home=/app --driver-java-options=-Djava.io.tmpdir=/tmp"
+ENV HOME=/app
+
+# Importante: Garanta que o Java 17 seja o padrão
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$PATH"
 
 WORKDIR /app
-COPY ./scripts/kafka_consumer/* .
+COPY ./scripts/kafka_consumer/ .
 
-CMD ["python", "-u", "main.py"]
+# Teste de sanidade: verifique se o java responde antes de abrir o python
+RUN java -version
+
+CMD ["python3", "-u", "main.py"]

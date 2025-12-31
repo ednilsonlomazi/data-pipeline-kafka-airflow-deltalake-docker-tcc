@@ -1,24 +1,33 @@
 import os
-from ingestion.consumer import TraficConsumer
-from multiprocessing import Process
+from ingestion.consumer import SparkRawIngestion
 
-# Busca o endereço do Kafka via variável de ambiente (definida no docker-compose)
-# Se não encontrar, usa 'kafka:29092' como padrão para a rede interna do Docker
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 
-# O caminho eh o ponto de montagem INTERNO do container
-# mapeado no arquivo do compose, que eh um bind a estrutura de pastas do datalakehouse
-pasta_raiz = '/app/datalakehouse/raw'
+def main():
+    # Instancia a classe apenas UMA vez
+    ingestion = SparkRawIngestion(bootstrap_servers=KAFKA_BROKER)
+    
+    topicos = ['l01', 'l03', 'l06']
+    queries = []
 
-tc = TraficConsumer(bootstrap_servers=KAFKA_BROKER)
+    for t in topicos:
+        print(f"Configurando stream para o tópico: {t}")
+        # Chamamos um método que inicia o stream mas NÃO usa awaitTermination() ainda
+        query = ingestion.process_topic_to_raw(t, wait=False)
+        queries.append(query)
 
-topicos = ['l01', 'l03', 'l06']
-processos_consumo = []
+    print("Todos os streams estão rodando em paralelo...")
+   
+    # Em vez de awaitAnyTermination(), fazemos isso:
+    for query in queries:
+        try:
+            # Isso faz o Python esperar a query X terminar antes de olhar a Y
+            # Mas como elas já estão rodando em paralelo no Spark, 
+            # o Python só fica "travado" vigiando cada uma.
+            query.awaitTermination()
+        except Exception as e:
+            print(f"A query do tópico {query.name} falhou: {e}")
+            continue 
 
-for t in topicos:
-    p = Process(target=tc.run_consumer, args=(t, pasta_raiz))
-    processos_consumo.append(p)
-    p.start()
-
-for p in processos_consumo:
-    p.join()
+if __name__ == "__main__":
+    main()
