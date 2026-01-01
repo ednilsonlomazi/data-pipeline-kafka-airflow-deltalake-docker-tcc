@@ -25,23 +25,23 @@ ENV PATH="$JAVA_HOME/bin:$PATH"
 RUN pip3 install --no-cache-dir pyspark==3.5.0 delta-spark==3.0.0
 
 
-# 1. (Padrão Ubuntu Root - caminhoo para salvar os jars)
+# 1. (Padrão Ubuntu Root - caminho para salvar os jars)
 ENV SPARK_JARS_DIR=/usr/local/lib/python3.10/dist-packages/pyspark/jars
 
-# 2. Criamos a pasta explicitamente (O 'curl' falha se a pasta não existir)
+# 2. Criamos a pasta explicitamente
 RUN mkdir -p ${SPARK_JARS_DIR}
 
-# 3. Baixamos um por um. Se um falhar, saberemos exatamente qual foi.
-# Usamos o sinal de continuação \ mas cada comando é testado.
+# 3. Download das dependências atualizado com o Token Provider
 RUN curl -f -sS -L https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar -o ${SPARK_JARS_DIR}/hadoop-aws-3.3.4.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar -o ${SPARK_JARS_DIR}/aws-java-sdk-bundle-1.12.262.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.0.0/delta-spark_2.12-3.0.0.jar -o ${SPARK_JARS_DIR}/delta-spark_2.12-3.0.0.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/io/delta/delta-storage/3.0.0/delta-storage-3.0.0.jar -o ${SPARK_JARS_DIR}/delta-storage-3.0.0.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.5.0/spark-sql-kafka-0-10_2.12-3.5.0.jar -o ${SPARK_JARS_DIR}/spark-sql-kafka-0-10_2.12-3.5.0.jar && \
+    curl -f -sS -L https://repo1.maven.org/maven2/org/apache/spark/spark-token-provider-kafka-0-10_2.12/3.5.0/spark-token-provider-kafka-0-10_2.12-3.5.0.jar -o ${SPARK_JARS_DIR}/spark-token-provider-kafka-0-10_2.12-3.5.0.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/3.5.0/kafka-clients-3.5.0.jar -o ${SPARK_JARS_DIR}/kafka-clients-3.5.0.jar && \
     curl -f -sS -L https://repo1.maven.org/maven2/org/apache/commons/commons-pool2/2.11.1/commons-pool2-2.11.1.jar -o ${SPARK_JARS_DIR}/commons-pool2-2.11.1.jar
 
-# 1. Criar pastas de trabalho e dar permissões
+    # 1. Criar pastas de trabalho e dar permissões
 RUN mkdir -p /app/.ivy2 /tmp/spark-events && chmod -R 777 /app/.ivy2 /tmp/spark-events
 
 # 2. Definir variáveis de ambiente para caminhos absolutos

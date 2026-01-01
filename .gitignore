@@ -1,3 +1,4 @@
+reseta_tudo.sh
 *_teste_*
 minio/
 
@@ -28,3 +29,5 @@ airflow/webserver_config.py
 
 # GARANTE que a pasta de dags NÃO seja ignorada
 !airflow/dags/
+
+scripts/kafka_consumer/.iv*
