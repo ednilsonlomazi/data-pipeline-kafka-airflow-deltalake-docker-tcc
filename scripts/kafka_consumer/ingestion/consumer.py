@@ -52,6 +52,7 @@ class SparkRawIngestion:
             .option("kafka.bootstrap.servers", self.bootstrap_servers) \
             .option("subscribe", topic_name) \
             .option("startingOffsets", "earliest") \
+            .option("failOnDataLoss", "false") \
             .load()
 
         # 2. Transformação básica (O Kafka envia os dados em binário na coluna 'value')
@@ -65,6 +66,7 @@ class SparkRawIngestion:
             .queryName(topic_name) \
             .outputMode("append") \
             .option("checkpointLocation", f"s3a://raw/checkpoints/{topic_name}") \
+            .trigger(processingTime='1 minute') \
             .start(f"s3a://raw/{topic_name}")
         
         if wait:

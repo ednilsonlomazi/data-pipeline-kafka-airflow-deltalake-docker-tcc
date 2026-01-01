@@ -2,6 +2,8 @@ import pandas as pd
 import time
 import json
 from confluent_kafka import Producer
+import uuid
+from datetime import datetime, timedelta
 
 
 class TraficProducer:
@@ -39,9 +41,14 @@ class TraficProducer:
 
             for row in df_melted.itertuples(index=False):
                 quantidade = int(row.qtd_veiculos)
-                row_js = json.dumps(row._asdict(), ensure_ascii=False)
                 
                 for i in range(quantidade):
+                    row_as_dict = row._asdict()
+                    row_as_dict["id_msn"] = str(uuid.uuid4())
+                    fuso_brasil = datetime.now() - timedelta(hours=3)
+                    row_as_dict["dt_generation"] = fuso_brasil.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    row_js = json.dumps(row_as_dict, ensure_ascii=False)
+
                     producer.produce(
                         topic=topic_name, 
                         value=row_js.encode('utf-8'),
