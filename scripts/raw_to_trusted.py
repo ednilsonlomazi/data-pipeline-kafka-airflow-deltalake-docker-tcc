@@ -18,6 +18,10 @@ spark = SparkSession.builder \
     .config("spark.hadoop.fs.s3a.secret.key", "password123") \
     .config("spark.hadoop.fs.s3a.path.style.access", "true") \
     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.databricks.delta.retry.commit.attempts", "10") \
+    .config("spark.databricks.delta.retry.commit.delay", "100ms") \
+    .config("spark.databricks.delta.optimizeWrite.enabled", "true") \
+    .config("spark.databricks.delta.autoCompact.enabled", "true") \
     .getOrCreate()
 
 schema_trusted = StructType([
@@ -32,7 +36,8 @@ schema_trusted = StructType([
     StructField("desc_tipo_veiculo", StringType(), True),
     StructField("qtd_veiculos", IntegerType(), True),
     StructField("id_msn", StringType(), False), 
-    StructField("dt_generation", StringType(), True)
+    StructField("timestamp", StringType(), True),
+    StructField("datastamp", StringType(), True)
 ])
 
 # Função que o Spark vai chamar para cada "pedaço" (micro-batch) novo de dados, <Near-realtime>
@@ -52,10 +57,14 @@ if arg == 'setup':
     if not DeltaTable.isDeltaTable(spark, path_trusted):
         # Cria um DataFrame vazio com o schema definido
         df_vazio = spark.createDataFrame([], schema_trusted)
-        df_vazio.write.format("delta").save(path_trusted)
+        df_vazio.write \
+            .partitionBy("datastamp") \
+            .format("delta").save(path_trusted)
+        
         print("Tabela Delta inicializada com sucesso.")
     else:
         print("A pasta já existe no MinIO. Setup ignorado.")
+
     
     spark.stop()
     sys.exit(0)
@@ -83,6 +92,8 @@ try:
     print("Processamento incremental concluído!")
 
 except Exception as e:
-    print(f"Erro no processamento: {e}")
+    print("Erro no processamento")
+    raise e
+
 finally:
     spark.stop()

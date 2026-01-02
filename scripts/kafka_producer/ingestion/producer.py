@@ -46,7 +46,8 @@ class TraficProducer:
                     row_as_dict = row._asdict()
                     row_as_dict["id_msn"] = str(uuid.uuid4())
                     fuso_brasil = datetime.now() - timedelta(hours=3)
-                    row_as_dict["dt_generation"] = fuso_brasil.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    row_as_dict["timestamp"] = fuso_brasil.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    row_as_dict["datastamp"] = fuso_brasil.strftime('%Y-%m-%d')
                     row_js = json.dumps(row_as_dict, ensure_ascii=False)
 
                     producer.produce(
