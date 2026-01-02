@@ -75,6 +75,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ingestion
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+        reservations:
+          memory: 128MB
     container_name: ct-kafka-consumer
     volumes:
       - ./datalakehouse/raw:/app/datalakehouse/raw
@@ -90,6 +96,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.producer
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+        reservations:
+          memory: 128MB      
     container_name: ct-kafka-producer
     volumes:
       - ./data/volume_pedagiado_2025:/app/data/volume_pedagiado_2025
