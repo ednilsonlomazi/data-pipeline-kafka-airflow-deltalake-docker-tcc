@@ -21,6 +21,10 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
   # ------------------------------- INFRAESTRUTURA KAFKA ---------------------------------------------------
   zookeeper:
@@ -30,6 +34,10 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
     volumes:
       - ./kafka/zookeeper_data:/var/lib/zookeeper/data
+    deploy:
+      resources:
+        limits:
+          memory: 4GB    
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -54,6 +62,10 @@ services:
       interval: 10s # intervalo entre tentativas
       timeout: 5s # tenta ver se o container esta escutando por 5 segundos
       retries: 5 # tenta 5 vezes
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
   kafka-init:
     image: confluentinc/cp-kafka:latest
@@ -70,6 +82,10 @@ services:
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic l03 --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic l06 --replication-factor 1 --partitions 1
       "
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
   kafka-consumer:
     build:
@@ -78,7 +94,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512MB
+          memory: 4GB
         reservations:
           memory: 128MB
     container_name: ct-kafka-consumer
@@ -99,7 +115,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256MB
+          memory: 4GB
         reservations:
           memory: 128MB      
     container_name: ct-kafka-producer
@@ -122,6 +138,10 @@ services:
       - POSTGRES_DB=airflow
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
 # Container que prepara o banco e cria o usuário
   airflow-init:
@@ -132,6 +152,10 @@ services:
     command: bash -c "airflow db upgrade && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@example.com --password admin"
     depends_on:
       - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
   airflow-webserver:
     build: .
@@ -155,6 +179,10 @@ services:
       - ./scripts:/opt/airflow/scripts
     user: "50000:0"
     command: webserver
+    deploy:
+      resources:
+        limits:
+          memory: 4GB
 
   airflow-scheduler:
     build: .
@@ -175,3 +203,7 @@ services:
       - ./scripts:/opt/airflow/scripts
     user: "50000:0"
     command: scheduler
+    deploy:
+      resources:
+        limits:
+          memory: 4GB

@@ -18,7 +18,7 @@ with DAG(
     'pipeline_trusted_tab_trafego',
     default_args=default_args,
     description='Gera tab_trafego na camada Trusted do Data Lakehouse',
-    schedule='0 6-18 * * *',
+    schedule='0 12-14 * * *',
     catchup=False,
     tags=['TCC', 'Spark'],
 ) as dag:
