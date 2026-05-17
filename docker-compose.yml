@@ -120,7 +120,7 @@ services:
           memory: 128MB      
     container_name: ct-kafka-producer
     volumes:
-      - ./data/volume_pedagiado_2025:/app/data/volume_pedagiado_2025
+      - ./data/financas:/app/data/financas
       - ./scripts/kafka_producer:/app
     depends_on:
       kafka:

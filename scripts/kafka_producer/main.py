@@ -1,30 +1,32 @@
-from ingestion.producer import TraficProducer
-import json
-from multiprocessing import Process
+from ingestion.producer import KafkaDataProducer
 import os
+from multiprocessing import Process
 
 # Busca o endereço do Kafka via variável de ambiente (definida no docker-compose)
-# Se não encontrar, usa 'kafka:29092' como padrão para a rede interna do Docker
 KAFKA_BROKER = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 
-tp = TraficProducer(bootstrap_servers=KAFKA_BROKER)
+def main():
+    tp = KafkaDataProducer(bootstrap_servers=KAFKA_BROKER)
 
-arquivos_config = [
-        {"file": '/app/data/volume_pedagiado_2025/VOLUME_PEDAGIADO-L01-HORARIO-2025.csv', "topic": "l01"},
-        {"file": '/app/data/volume_pedagiado_2025/VOLUME_PEDAGIADO-L03-HORARIO-2025.csv', "topic": "l03"},
-        {"file": '/app/data/volume_pedagiado_2025/VOLUME_PEDAGIADO-L06-HORARIO-2025.csv', "topic": "l06"}
-    ]
-processos = []
+    
+    arquivos_config = [
+            {"file": '/app/data/financas/ft_receita.csv', "topic": "l01"},
+            {"file": '/app/data/financas/dm_empenho_desp_2026.csv', "topic": "l03"}
+        ]
+    
+    processos = []
 
-for item in arquivos_config:
-    # Um processo para cada arquivo
-    p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 1000, 30))
-    processos.append(p)
-    p.start() # Inicia a execução em paralelo
+    for item in arquivos_config:
+        # Passando wait_sec=3 para injetar 1 mensagens a cada 3 segundo por tópico
+        p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 500, 3))
+        processos.append(p)
+        p.start() # Inicia a execução em paralelo
 
-# Aguarda todos os processos terminarem
-for p in processos:
-    p.join()
+    # Aguarda todos os processos terminarem
+    for p in processos:
+        p.join()
 
-print("Todos os arquivos foram processados!")
+    print("Todos os dados financeiros foram enviados para o Kafka!")
 
+if __name__ == "__main__":
+    main()
