@@ -25,15 +25,19 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 schema_trusted = StructType([
-    StructField("id_empenho", StringType(), True),          # ID único do empenho
-    StructField("ano_exercicio", IntegerType(), True),     # Ano (Ex: 2026)
-    StructField("nr_empenho", StringType(), True),         # Número do empenho
-    StructField("dt_empenho", StringType(), True),         # Data (Ex: 2026-04-01)
-    StructField("unidade_executora", StringType(), True),  # Código + Nome da unidade
-    StructField("tipo_empenho", StringType(), True),       # Tipo (Ex: ESTIMADO)
-    StructField("vr_empenho", DoubleType(), True),         # Valor monetário (Ex: 277.74)
-    StructField("cd_uni_prog_gasto", StringType(), True),  # Código do programa de gasto
-    StructField("uni_prog_gasto", StringType(), True),     # Nome do programa (Pode vir vazio)
+    StructField("id_tempo", IntegerType(), True),           # ID de tempo / Calendário
+    StructField("id_unidade_orc", StringType(), True),      # Código da Unidade Orçamentária
+    StructField("id_origem", StringType(), True),           # Código de origem da receita
+    StructField("id_especie", StringType(), True),          # Código de espécie da receita
+    StructField("id_rubrica", StringType(), True),          # Código de rúbrica
+    StructField("id_alinea", StringType(), True),           # Código de alínea
+    StructField("id_subalinea", StringType(), True),        # Código de subalínea
+    StructField("id_item", StringType(), True),             # ID do item específico
+    StructField("id_fonte", StringType(), True),            # ID da fonte de recursos
+    StructField("cd_fonte_recurso", StringType(), True),    # Código estruturado da fonte
+    StructField("cd_classificacao_rec", StringType(), True), # Classificação econômica completa (Ex: 1311000000)
+    StructField("ano_particao", IntegerType(), True),       # Ano de referência original (Ex: 2002)
+    StructField("vr_efetivado", DoubleType(), True),        # Valor real arrecadado (Ex: 155.22)
     
     # Metadados de controle injetados pelo Producer para o Data Lakehouse
     StructField("id_msn", StringType(), False), 
