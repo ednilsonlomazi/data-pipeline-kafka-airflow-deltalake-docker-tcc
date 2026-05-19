@@ -4,9 +4,9 @@ import sys
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, TimestampType
 from pyspark.sql.functions import from_json, col
 
-path_trusted = "s3a://trusted/tab_trafego"
+path_trusted = "s3a://trusted/tab_receita"
 arg = sys.argv[1]
-path_raw = f"s3a://raw/{arg}"
+path_raw = f"s3a://raw/l03"
 
 
 spark = SparkSession.builder \
@@ -25,18 +25,19 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 schema_trusted = StructType([
-    StructField("data", StringType(), True),                
-    StructField("hora", IntegerType(), True),      
-    StructField("num_lote", StringType(), True),      
-    StructField("desc_praca", StringType(), True),
-    StructField("desc_sentido", StringType(), True),    
-    StructField("desc_tipo_pista", StringType(), True),
-    StructField("desc_tipo_passagem", StringType(), True),
-    StructField("desc_tipo_pagamento", StringType(), True),
-    StructField("desc_tipo_veiculo", StringType(), True),
-    StructField("qtd_veiculos", IntegerType(), True),
+    StructField("id_empenho", StringType(), True),          # ID único do empenho
+    StructField("ano_exercicio", IntegerType(), True),     # Ano (Ex: 2026)
+    StructField("nr_empenho", StringType(), True),         # Número do empenho
+    StructField("dt_empenho", StringType(), True),         # Data (Ex: 2026-04-01)
+    StructField("unidade_executora", StringType(), True),  # Código + Nome da unidade
+    StructField("tipo_empenho", StringType(), True),       # Tipo (Ex: ESTIMADO)
+    StructField("vr_empenho", DoubleType(), True),         # Valor monetário (Ex: 277.74)
+    StructField("cd_uni_prog_gasto", StringType(), True),  # Código do programa de gasto
+    StructField("uni_prog_gasto", StringType(), True),     # Nome do programa (Pode vir vazio)
+    
+    # Metadados de controle injetados pelo Producer para o Data Lakehouse
     StructField("id_msn", StringType(), False), 
-    StructField("timestamp", StringType(), True),
+    StructField("timestamp_ingestao", StringType(), True),
     StructField("datastamp", StringType(), True)
 ])
 
@@ -79,12 +80,12 @@ try:
         from_json(col("value").cast("string"), schema_trusted).alias("data")
     ).select("data.*")
 
-    print(f"Iniciando escrita incremental para: {arg}")
+    print(f"Iniciando escrita incremental para: l03")
 
     # Trigger: AvailableNow: Isso faz o Spark processar apenas o que há de novo e PARAR (como uma DAG comum)
     query = df_novos_dados.writeStream \
         .foreachBatch(upsert_to_delta) \
-        .option("checkpointLocation", f"s3a://trusted/checkpoints/{arg}") \
+        .option("checkpointLocation", f"s3a://trusted/checkpoints/l03") \
         .trigger(availableNow=True) \
         .start()
     
