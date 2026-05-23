@@ -25,15 +25,13 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 schema_trusted = StructType([
-    StructField("id_empenho", StringType(), True),          # ID único do empenho
-    StructField("ano_exercicio", IntegerType(), True),     # Ano (Ex: 2026)
-    StructField("nr_empenho", StringType(), True),         # Número do empenho
-    StructField("dt_empenho", StringType(), True),         # Data (Ex: 2026-04-01)
-    StructField("unidade_executora", StringType(), True),  # Código + Nome da unidade
-    StructField("tipo_empenho", StringType(), True),       # Tipo (Ex: ESTIMADO)
-    StructField("vr_empenho", DoubleType(), True),         # Valor monetário (Ex: 277.74)
-    StructField("cd_uni_prog_gasto", StringType(), True),  # Código do programa de gasto
-    StructField("uni_prog_gasto", StringType(), True),     # Nome do programa (Pode vir vazio)
+    StructField("id_tempo", IntegerType(), True),           # ID de tempo / Calendário (Ex: 42760)
+    StructField("id_tipo", IntegerType(), True),            # ID do tipo de operação (Ex: 1)
+    StructField("id_favorecido", StringType(), True),       # ID do credor/favorecido (Ex: 1622564)
+    StructField("id_contrato", StringType(), True),         # ID do contrato associado (Ex: 265)
+    StructField("ano_particao", IntegerType(), True),       # Ano de referência (Ex: 2006)
+    StructField("vr_juros", DoubleType(), True),            # Valor dos juros (Ex: 0.00)
+    StructField("vr_amortizacao", DoubleType(), True),      # Valor da amortização (Ex: 0.00)
     
     # Metadados de controle injetados pelo Producer para o Data Lakehouse
     StructField("id_msn", StringType(), False), 

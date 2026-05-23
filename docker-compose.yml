@@ -177,6 +177,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./datalakehouse:/opt/airflow/datalakehouse
       - ./scripts:/opt/airflow/scripts
+      - ./data/financas:/opt/airflow/data/financas
     user: "50000:0"
     command: webserver
     deploy:
@@ -201,6 +202,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./datalakehouse:/opt/airflow/datalakehouse
       - ./scripts:/opt/airflow/scripts
+      - ./data/financas:/opt/airflow/data/financas
     user: "50000:0"
     command: scheduler
     deploy:

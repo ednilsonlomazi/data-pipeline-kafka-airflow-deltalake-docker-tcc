@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pendulum
 
 local_tz = pendulum.timezone("America/Sao_Paulo")
-deltatables = ('dim_praca', 'dim_tipo_pagamento', 'dim_tipo_veiculo')
+deltatables = ['dim_tipo_despesa']
 
 default_args = {
     'owner': 'tcc_projeto',

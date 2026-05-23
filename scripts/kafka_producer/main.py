@@ -11,14 +11,14 @@ def main():
     
     arquivos_config = [
             {"file": '/app/data/financas/ft_receita.csv', "topic": "l01"},
-            {"file": '/app/data/financas/dm_empenho_desp_2026.csv', "topic": "l03"}
+            {"file": '/app/data/financas/ft_divida_pub.csv', "topic": "l03"}
         ]
     
     processos = []
 
     for item in arquivos_config:
         # Passando wait_sec=3 para injetar 1 mensagens a cada 3 segundo por tópico
-        p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 500, 3))
+        p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 500, 10))
         processos.append(p)
         p.start() # Inicia a execução em paralelo
 

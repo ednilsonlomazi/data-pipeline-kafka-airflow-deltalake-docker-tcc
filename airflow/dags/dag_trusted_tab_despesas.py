@@ -17,13 +17,13 @@ default_args = {
 with DAG(
     'pipeline_trusted_tab_despesas',
     default_args=default_args,
-    description='Gera tab_trafego na camada Trusted do Data Lakehouse',
+    description='Gera tab_despesas na camada Trusted do Data Lakehouse',
     schedule='0 12-14 * * *',
     catchup=False,
-    tags=['TCC', 'Spark'],
+    tags=['trusted', 'tab_despesa'],
 ) as dag:
 
-    # a task setup garante que a pasta tab_trafego exista antes de iniciar o processo raw_to_trusted
+    # a task setup garante que a pasta tab_despesas exista antes de iniciar o processo raw_to_trusted
     task_setup = BashOperator(
         task_id='garantir_tabela_trusted',
         bash_command='python3 /opt/airflow/scripts/gera_trusted_tab_despesas.py setup'

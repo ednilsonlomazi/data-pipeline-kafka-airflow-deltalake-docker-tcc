@@ -18,7 +18,7 @@ postgres_data/
 remove_volumes_kafka.sh
 dev/
 .env
-
+system_reset
 
 # ---------------------- Airflow ----------------------------
 # Ignora tudo do Airflow que é gerado automaticamente

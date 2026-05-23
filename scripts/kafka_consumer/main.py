@@ -7,7 +7,7 @@ def main():
     # Instancia a classe apenas UMA vez
     ingestion = SparkRawIngestion(bootstrap_servers=KAFKA_BROKER)
     
-    topicos = ['l01', 'l03', 'l06']
+    topicos = ['l01', 'l03']
     queries = []
 
     for t in topicos:
