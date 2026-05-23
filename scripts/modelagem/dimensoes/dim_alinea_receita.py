@@ -5,15 +5,15 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from pyspark.sql.functions import current_timestamp, lit
 
 # 1. Configuração dos Caminhos (Lendo do arquivo local e salvando na pasta 'refined' do MinIO)
-path_csv = "/opt/airflow/data/financas/dm_tipo_divida.csv"
-path_refined = "s3a://refined/dim_tipo_divida"
+path_csv = "/opt/airflow/data/financas/dm_alinea_rec.csv"
+path_refined = "s3a://refined/dim_alinea_receita"
 
 arg = sys.argv[1] if len(sys.argv) > 1 else 'run'
 
 # Inicialização da Sessão Spark com suporte ao Delta Lake e MinIO
 
 spark = SparkSession.builder \
-    .appName("AppDimTipoDivida") \
+    .appName("AppDimAlineaReceita") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
     .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
     .config("spark.hadoop.fs.s3a.endpoint", "http://ct-minio:9000") \
@@ -29,22 +29,22 @@ spark = SparkSession.builder \
 
 # Definição do Schema baseado nas colunas enviadas
 schema_csv = StructType([
-    StructField("id_tipo", IntegerType(), True),
-    StructField("cd_tipo", StringType(), True),  # String previne perda de formatação se houver zeros à esquerda
+    StructField("id_alinea", IntegerType(), True),
+    StructField("cd_alinea", StringType(), True),  # String previne perda de formatação se houver zeros à esquerda
     StructField("nome", StringType(), True)
 ])
 
 # --- MODO SETUP: Inicializa a tabela Delta vazia na camada Refined se ela não existir ---
 if arg == 'setup':
     if not DeltaTable.isDeltaTable(spark, path_refined):
-        # Criamos um DataFrame vazio com o schema + metadados de auditoria
+        # DataFrame vazio com o schema + metadados de auditoria
         df_vazio = spark.createDataFrame([], schema_csv) \
             .withColumn("dt_alteracao", current_timestamp())
             
         df_vazio.write \
             .format("delta") \
             .save(path_refined)
-        print("Tabela Delta 'dim_tipo_divida' inicializada com sucesso na camada Refined.")
+        print("Tabela Delta 'dim_alinea_receita' inicializada com sucesso na camada Refined.")
     else:
         print("A tabela já existe na camada Refined. Setup ignorado.")
     
@@ -62,22 +62,22 @@ else:
             .schema(schema_csv) \
             .csv(path_csv)
 
-        # Adiciona uma coluna de timestamp para sabermos quando a dimensão foi atualizada/inserida
+        # Adiciona uma coluna de timestamp para saber quando a dimensão foi atualizada/inserida
         df_updates = df_csv.withColumn("dt_alteracao", current_timestamp())
 
         print(f"2) Iniciando o processo de MERGE na pasta: {path_refined}")
         dt_refined = DeltaTable.forPath(spark, path_refined)
 
-        # 3) Configuração do MERGE usando a chave primária 'id_tipo'
+        # 3) Configuração do MERGE usando a chave primária 'id_alinea'
         dt_refined.alias("dim").merge(
             df_updates.alias("upd"),
-            "dim.id_tipo = upd.id_tipo"
+            "dim.id_alinea = upd.id_alinea"
         ) \
         .whenMatchedUpdateAll() \
         .whenNotMatchedInsertAll() \
         .execute()
 
-        print("Processamento de atualização da dim_tipo_divida concluído com sucesso!")
+        print("Processamento de atualização da dim_alinea_receita concluído com sucesso!")
 
     except Exception as e:
         print("Erro no processamento da camada Refined")

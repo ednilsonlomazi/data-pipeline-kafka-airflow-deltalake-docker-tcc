@@ -5,15 +5,15 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from pyspark.sql.functions import current_timestamp, lit
 
 # 1. Configuração dos Caminhos (Lendo do arquivo local e salvando na pasta 'refined' do MinIO)
-path_csv = "/opt/airflow/data/financas/dm_tipo_divida.csv"
-path_refined = "s3a://refined/dim_tipo_divida"
+path_csv = "/opt/airflow/data/financas/dm_item_rec.csv"
+path_refined = "s3a://refined/dim_item_receita"
 
 arg = sys.argv[1] if len(sys.argv) > 1 else 'run'
 
 # Inicialização da Sessão Spark com suporte ao Delta Lake e MinIO
 
 spark = SparkSession.builder \
-    .appName("AppDimTipoDivida") \
+    .appName("AppDimItemReceita") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
     .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
     .config("spark.hadoop.fs.s3a.endpoint", "http://ct-minio:9000") \
@@ -44,7 +44,7 @@ if arg == 'setup':
         df_vazio.write \
             .format("delta") \
             .save(path_refined)
-        print("Tabela Delta 'dim_tipo_divida' inicializada com sucesso na camada Refined.")
+        print("Tabela Delta 'dim_item_receita' inicializada com sucesso na camada Refined.")
     else:
         print("A tabela já existe na camada Refined. Setup ignorado.")
     
@@ -77,7 +77,7 @@ else:
         .whenNotMatchedInsertAll() \
         .execute()
 
-        print("Processamento de atualização da dim_tipo_divida concluído com sucesso!")
+        print("Processamento de atualização da dim_item_receita concluído com sucesso!")
 
     except Exception as e:
         print("Erro no processamento da camada Refined")

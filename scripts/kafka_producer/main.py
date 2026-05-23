@@ -18,7 +18,7 @@ def main():
 
     for item in arquivos_config:
         # Passando wait_sec=3 para injetar 1 mensagens a cada 3 segundo por tópico
-        p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 500, 10))
+        p = Process(target=tp.run_producer, args=(item['file'], item['topic'], 500, 30))
         processos.append(p)
         p.start() # Inicia a execução em paralelo
 

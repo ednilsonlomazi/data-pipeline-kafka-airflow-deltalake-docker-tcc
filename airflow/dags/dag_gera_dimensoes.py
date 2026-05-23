@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pendulum
 
 local_tz = pendulum.timezone("America/Sao_Paulo")
-deltatables = ['dim_tipo_despesa']
+deltatables = ['dim_tipo_despesa', 'dim_favorecido', 'dim_contrato_divida', 'dim_alinea_receita', 'dim_item_receita', 'dim_origem_receita', 'dim_rubrica_receita', 'dim_unidade_orcamentaria']
 
 default_args = {
     'owner': 'tcc_projeto',
@@ -26,10 +26,18 @@ with DAG(
 
     # chama os processos de raw para trusted
     for t in deltatables:
+
+        task_merge_setup = BashOperator(
+            task_id=f'Setup-Gera-{t.replace("_", "-")}',
+            bash_command=f'python3 /opt/airflow/scripts/modelagem/dimensoes/{t}.py setup'
+        )
+
         task_merge = BashOperator(
             task_id=f'Gera-{t.replace("_", "-")}',
             bash_command=f'python3 /opt/airflow/scripts/modelagem/dimensoes/{t}.py'
         )
+
+        task_merge_setup >> task_merge
 
         
         

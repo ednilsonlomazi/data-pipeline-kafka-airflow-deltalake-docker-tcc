@@ -5,15 +5,15 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from pyspark.sql.functions import current_timestamp, lit
 
 # 1. Configuração dos Caminhos (Lendo do arquivo local e salvando na pasta 'refined' do MinIO)
-path_csv = "/opt/airflow/data/financas/dm_tipo_divida.csv"
-path_refined = "s3a://refined/dim_tipo_divida"
+path_csv = "/opt/airflow/data/financas/dm_unidade_orc.csv"
+path_refined = "s3a://refined/dim_unidade_orcamentaria"
 
 arg = sys.argv[1] if len(sys.argv) > 1 else 'run'
 
 # Inicialização da Sessão Spark com suporte ao Delta Lake e MinIO
 
 spark = SparkSession.builder \
-    .appName("AppDimTipoDivida") \
+    .appName("AppDimUnidadeOrcamentaria") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
     .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
     .config("spark.hadoop.fs.s3a.endpoint", "http://ct-minio:9000") \
@@ -29,8 +29,8 @@ spark = SparkSession.builder \
 
 # Definição do Schema baseado nas colunas enviadas
 schema_csv = StructType([
-    StructField("id_tipo", IntegerType(), True),
-    StructField("cd_tipo", StringType(), True),  # String previne perda de formatação se houver zeros à esquerda
+    StructField("id_unidade_orc", IntegerType(), True),
+    StructField("cd_unidade_orc", StringType(), True),  # String previne perda de formatação se houver zeros à esquerda
     StructField("nome", StringType(), True)
 ])
 
@@ -71,13 +71,13 @@ else:
         # 3) Configuração do MERGE usando a chave primária 'id_tipo'
         dt_refined.alias("dim").merge(
             df_updates.alias("upd"),
-            "dim.id_tipo = upd.id_tipo"
+            "dim.id_unidade_orc = upd.id_unidade_orc"
         ) \
         .whenMatchedUpdateAll() \
         .whenNotMatchedInsertAll() \
         .execute()
 
-        print("Processamento de atualização da dim_tipo_divida concluído com sucesso!")
+        print("Processamento de atualização da dim_unidade_orcamentaria concluído com sucesso!")
 
     except Exception as e:
         print("Erro no processamento da camada Refined")
