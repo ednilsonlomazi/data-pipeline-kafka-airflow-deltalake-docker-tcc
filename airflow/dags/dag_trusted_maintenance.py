@@ -18,7 +18,8 @@ with DAG(
     'trusted_deltatables_maintenance',
     default_args=default_args,
     description='Agrupamento de arquivos por Z-Order',
-    schedule='0 0 * * *',
+    #schedule='0 0 * * *',
+    is_paused_upon_creation=True, # apos reiniciar o container, a dag nasce pausada
     catchup=False,
     tags=['maintenance', 'trusted', 'deltatables'],
     max_active_tasks=1, # cancela paralelisto de tasks, roda uma por vez

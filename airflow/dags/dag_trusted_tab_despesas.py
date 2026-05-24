@@ -18,7 +18,8 @@ with DAG(
     'pipeline_trusted_tab_despesas',
     default_args=default_args,
     description='Gera tab_despesas na camada Trusted do Data Lakehouse',
-    schedule='0 12-14 * * *',
+    #schedule='0 12-14 * * *',
+    is_paused_upon_creation=True, # apos reiniciar o container, a dag nasce pausada
     catchup=False,
     tags=['trusted', 'tab_despesa'],
 ) as dag:

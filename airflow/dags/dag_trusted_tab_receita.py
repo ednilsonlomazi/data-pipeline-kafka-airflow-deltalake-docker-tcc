@@ -18,8 +18,9 @@ with DAG(
     'pipeline_trusted_tab_receita',
     default_args=default_args,
     description='Gera tab_receita na camada Trusted do Data Lakehouse',
-    schedule='0 12-14 * * *',
+    #schedule='0 12-14 * * *',
     catchup=False,
+    is_paused_upon_creation=True, # apos reiniciar o container, a dag nasce pausada
     tags=['trusted', 'tab_receita'],
 ) as dag:
 

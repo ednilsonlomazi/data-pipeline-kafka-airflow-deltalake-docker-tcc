@@ -2,16 +2,15 @@ from pyspark.sql import SparkSession
 from delta.tables import DeltaTable
 import sys
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-from pyspark.sql.functions import current_timestamp, lit
+from pyspark.sql.functions import current_timestamp, lit, md5, concat, col
 
-# 1. Configuração dos Caminhos (Lendo do arquivo local e salvando na pasta 'refined' do MinIO)
+# 1. Configuração dos Caminhos
 path_csv = "/opt/airflow/data/financas/dm_origem_rec.csv"
 path_refined = "s3a://refined/dim_origem_receita"
 
 arg = sys.argv[1] if len(sys.argv) > 1 else 'run'
 
-# Inicialização da Sessão Spark com suporte ao Delta Lake e MinIO
-
+# Inicialização da Sessão Spark
 spark = SparkSession.builder \
     .appName("AppDimOrigemReceita") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
@@ -27,48 +26,59 @@ spark = SparkSession.builder \
     .config("spark.databricks.delta.autoCompact.enabled", "true") \
     .getOrCreate()
 
-# Definição do Schema baseado nas colunas enviadas
-schema_csv = StructType([
+# O SCHEMA AGORA JÁ NASCE COMPLETO (Reflete o estado final da tabela Delta)
+schema_final = StructType([
+    StructField("sk_dim_origem_receita", StringType(), True), # O Hash MD5 sempre gera uma String
     StructField("id_origem", IntegerType(), True),
-    StructField("cd_origem", StringType(), True),  # String previne perda de formatação se houver zeros à esquerda
-    StructField("nome", StringType(), True)
+    StructField("cd_origem", StringType(), True),  
+    StructField("nome", StringType(), True),
+    StructField("dt_alteracao", StringType(), True) # Campo de auditoria
 ])
 
-# --- MODO SETUP: Inicializa a tabela Delta vazia na camada Refined se ela não existir ---
+# --- MODO SETUP ---
 if arg == 'setup':
     if not DeltaTable.isDeltaTable(spark, path_refined):
-        # Criamos um DataFrame vazio com o schema + metadados de auditoria
-        df_vazio = spark.createDataFrame([], schema_csv) \
-            .withColumn("dt_alteracao", current_timestamp())
+        # Cria a tabela vazia seguindo rigorosamente o contrato do schema_final
+        df_vazio = spark.createDataFrame([], schema_final)
             
         df_vazio.write \
             .format("delta") \
             .save(path_refined)
-        print("Tabela Delta 'dim_origem_receita' inicializada com sucesso na camada Refined.")
+        print("Tabela Delta 'dim_origem_receita' inicializada do zero com Schema estruturado!")
     else:
-        print("A tabela já existe na camada Refined. Setup ignorado.")
+        print("A tabela já existe. Setup ignorado.")
     
     spark.stop()
     sys.exit(0)
 
+# --- MODO RUN ---
 else:
-    # --- MODO RUN (EXECUÇÃO DO PIPELINE) ---
     try:
         print(f"1) Lendo dados do arquivo CSV: {path_csv}")
-        # Lendo o CSV mapeando o caractere separador ';' (padrão dos seus outros arquivos)
+        
+        # Como o seu arquivo CSV físico NÃO tem a coluna 'sk_dim' nem 'dt_alteracao',
+        # nós lemos apenas as 3 colunas que existem nele usando um schema temporário de leitura.
+        schema_leitura_csv = StructType([
+            StructField("id_origem", IntegerType(), True),
+            StructField("cd_origem", StringType(), True),  
+            StructField("nome", StringType(), True)
+        ])
+
         df_csv = spark.read \
             .option("header", "true") \
             .option("delimiter", ";") \
-            .schema(schema_csv) \
+            .schema(schema_leitura_csv) \
             .csv(path_csv)
 
-        # Adiciona uma coluna de timestamp para sabermos quando a dimensão foi atualizada/inserida
-        df_updates = df_csv.withColumn("dt_alteracao", current_timestamp())
+        # Agora populamos as colunas calculadas para bater com o schema_final da tabela Delta
+        df_updates = df_csv \
+            .withColumn("sk_dim_origem_receita", md5(concat(col("id_origem").cast(StringType()), lit("")))) \
+            .withColumn("dt_alteracao", current_timestamp()) \
+            .select("sk_dim_origem_receita", "id_origem", "cd_origem", "nome", "dt_alteracao") # Organiza na ordem exata
 
         print(f"2) Iniciando o processo de MERGE na pasta: {path_refined}")
         dt_refined = DeltaTable.forPath(spark, path_refined)
 
-        # 3) Configuração do MERGE usando a chave primária 'id_tipo'
         dt_refined.alias("dim").merge(
             df_updates.alias("upd"),
             "dim.id_origem = upd.id_origem"
@@ -77,7 +87,7 @@ else:
         .whenNotMatchedInsertAll() \
         .execute()
 
-        print("Processamento de atualização da dim_origem_receita concluído com sucesso!")
+        print("Processamento concluído com sucesso!")
 
     except Exception as e:
         print("Erro no processamento da camada Refined")
