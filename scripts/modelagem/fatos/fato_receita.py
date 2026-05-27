@@ -37,28 +37,56 @@ try:
     df_tab_receita = spark.read.format("delta").load(path_tab_receita)
 
     df_tab_receita_agg = df_tab_receita.groupBy(
-        "id_alinea_receita", 
-        "id_item_receita", 
-        "id_origem_receita",
-        "id_rubrica_receita",
+        "id_alinea", 
+        "id_item", 
+        "id_origem",
+        "id_rubrica",
         "ano_particao"
     ).agg(
         F.sum("vr_efetivado").alias("val_efetivado")
     )
 
     # carrega dimensoes para psterior join
-    dim_alinea_receita = spark.read.format("delta").load(path_dim_alinea_receita).select("sk_dim_alinea_receita", "id_alinea_receita")
-    dim_item_receita = spark.read.format("delta").load(path_dim_item_receita).select("sk_dim_item_receita", "id_item_receita")
-    dim_origem_receita = spark.read.format("delta").load(path_dim_origem_receita).select("sk_dim_origem_receita", "id_origem_receita")
-    dim_rubrica_receita = spark.read.format("delta").load(path_dim_rubrica_receita).select("sk_dim_rubrica_receita", "id_rubrica_receita")    
+    dim_alinea_receita = spark.read.format("delta").load(path_dim_alinea_receita).select("sk_dim_alinea_receita", "id_alinea")
+    dim_item_receita = spark.read.format("delta").load(path_dim_item_receita).select("sk_dim_item_receita", "id_item")
+    dim_origem_receita = spark.read.format("delta").load(path_dim_origem_receita).select("sk_dim_origem_receita", "id_origem")
+    dim_rubrica_receita = spark.read.format("delta").load(path_dim_rubrica_receita).select("sk_dim_rubrica_receita", "id_rubrica")    
 
-    # 3. Join para buscar as SKs 
-    df_fato_receita = df_tab_receita_agg \
-        .join(dim_alinea_receita, "id_alinea_receita", "left") \
-        .join(dim_item_receita, "id_item_receita", "left") \
-        .join(dim_origem_receita, "id_origem_receita", "left") \
-        .join(dim_rubrica_receita, "id_rubrica_receita")
-    
+# 3. Join para buscar as SKs especificando lado esquerdo e direito
+    df_fato_receita = df_tab_receita_agg.alias("fato") \
+    .join(
+        dim_alinea_receita.alias("dim_alinea"), 
+        F.col("dim_alinea.id_alinea") == F.col("fato.id_alinea"), 
+        "left"
+    ) \
+    .join(
+        dim_item_receita.alias("dim_item"), 
+        F.col("dim_item.id_item") == F.col("fato.id_item"), 
+        "left"
+    ) \
+    .join(
+        dim_origem_receita.alias("dim_origem"), 
+        F.col("dim_origem.id_origem") == F.col("fato.id_origem"), 
+        "left"
+    ) \
+    .join(
+        dim_rubrica_receita.alias("dim_rubrica"), 
+        F.col("dim_rubrica.id_rubrica") == F.col("fato.id_rubrica"),
+        "left" # Mantendo o seu padrão (sem passar "left", o Spark assume inner)
+    )\
+    .select(
+        # 4. Seleção explícita utilizando os aliases criados nos joins
+        F.col("dim_alinea.sk_dim_alinea_receita"),
+        F.col("dim_item.sk_dim_item_receita"),
+        F.col("dim_origem.sk_dim_origem_receita"),
+        F.col("dim_rubrica.sk_dim_rubrica_receita"),
+        F.col("fato.id_alinea"),
+        F.col("fato.id_item"),
+        F.col("fato.id_origem"),
+        F.col("fato.id_rubrica"),
+        F.col("fato.ano_particao"),
+        F.col("fato.val_efetivado")
+    )
 
 
 
@@ -70,15 +98,15 @@ try:
 
     else:
         
-        dt_fato = DeltaTable.forPath(spark, path_fato)
+        df_fato = DeltaTable.forPath(spark, path_fato)
         
 
-        dt_fato.alias("target").merge(
-            df_fato.alias("source"),
-            "target.id_alinea_receita = source.id_alinea_receita AND " \
-            "target.id_item_receita = source.id_item_receita AND " \
-            "target.id_origem_receita = source.id_origem_receita AND " \
-            "target.id_rubrica_receita = source.id_rubrica_receita AND " \
+        df_fato.alias("target").merge(
+            df_fato_receita.alias("source"),
+            "target.id_alinea = source.id_alinea AND " \
+            "target.id_item = source.id_item AND " \
+            "target.id_origem = source.id_origem AND " \
+            "target.id_rubrica = source.id_rubrica AND " \
             "target.ano_particao = source.ano_particao"
         ).whenMatchedUpdate(set={
             # colunas para update: valor novo 
