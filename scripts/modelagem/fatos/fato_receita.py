@@ -103,13 +103,17 @@ try:
 
         df_fato.alias("target").merge(
             df_fato_receita.alias("source"),
-            "target.id_alinea = source.id_alinea AND " \
-            "target.id_item = source.id_item AND " \
-            "target.id_origem = source.id_origem AND " \
-            "target.id_rubrica = source.id_rubrica AND " \
-            "target.ano_particao = source.ano_particao"
+            "target.sk_dim_alinea_receita = source.sk_dim_alinea_receita AND " \
+            "target.sk_dim_item_receita = source.sk_dim_item_receita AND " \
+            "target.sk_dim_origem_receita = source.sk_dim_origem_receita AND " \
+            "target.sk_dim_rubrica_receita = source.sk_dim_rubrica_receita AND " \
+            "target.ano_particao = source.ano_particao" # 
         ).whenMatchedUpdate(set={
-            # colunas para update: valor novo 
+            #
+            "id_alinea": "source.id_alinea",
+            "id_item": "source.id_item",
+            "id_origem": "source.id_origem",
+            "id_rubrica": "source.id_rubrica",
             "val_efetivado": "source.val_efetivado"
         }).whenNotMatchedInsertAll().execute()
 
