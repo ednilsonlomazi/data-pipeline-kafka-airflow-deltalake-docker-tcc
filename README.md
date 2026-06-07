@@ -31,11 +31,11 @@ A arquitetura segue o padrão de medalhão (*Medallion Architecture*):
 graph TD
     %% Subgraph da Infraestrutura de Mensageria (Kafka)
     subgraph Ingestao_Streaming ["Fluxo de Ingestão e Streaming"]
-        ct-zookeeper["ct-zookeeper<br/>Porta: 2181"] -->|Gerencia| ct-kafka["ct-kafka<br/>Broker Port: 9092"]
+        ct-zookeeper("ct-zookeeper<br/>Porta: 2181") -->|Gerencia| ct-kafka("ct-kafka<br/>Broker Port: 9092")
         ct-kafka -->|Healthcheck OK| ct-kafka-init("ct-kafka-init<br/>Cria tópicos: l01, l03, l06")
         
-        ct-kafka-producer["ct-kafka-producer<br/>Producer Service"] -->|Dispara Payloads| ct-kafka
-        ct-kafka -->|Consome Mensagens| ct-kafka-consumer["ct-kafka-consumer<br/>Consumer Service"]
+        ct-kafka-producer("ct-kafka-producer<br/>Producer Service") -->|Dispara Payloads| ct-kafka
+        ct-kafka -->|Consome Mensagens| ct-kafka-consumer("ct-kafka-consumer<br/>Consumer Service")
     end
 
     %% Subgraph da Camada de Armazenamento (MinIO)
@@ -50,8 +50,8 @@ graph TD
     subgraph Orchestration_Orque ["Orquestração e Processamento"]
         ct-postgres[("ct-postgres<br/>Metadados Airflow")] -->|Depende| ct-airflow-init("ct-airflow-init<br/>Cria DB e User Admin")
         
-        ct-airflow-init -->|Sucesso| ct-airflow-webserver["ct-airflow-webserver<br/>Porta UI: 8081"]
-        ct-airflow-init -->|Sucesso| ct-airflow-scheduler["ct-airflow-scheduler<br/>Scheduler / DAGs PySpark"]
+        ct-airflow-init -->|Sucesso| ct-airflow-webserver("ct-airflow-webserver<br/>Porta UI: 8081")
+        ct-airflow-init -->|Sucesso| ct-airflow-scheduler("ct-airflow-scheduler<br/>Scheduler / DAGs PySpark")
     end
 
     %% Relação do Airflow/Spark com as Camadas do Lakehouse
@@ -59,8 +59,8 @@ graph TD
 
     %% Subgraph de Consumo (Analytics / Serving)
     subgraph Analytics_Serving ["Camada de Consumo e Analytics"]
-        ct-dremio["ct-dremio<br/>Virtualização SQL: 9047"]
-        ct-visual["ct-visual<br/>Dashboard Streamlit: 8501"]
+        ct-dremio("ct-dremio<br/>Virtualização SQL: 9047")
+        ct-visual("ct-visual<br/>Dashboard Streamlit: 8501")
     end
 
     %% Conexões de consumo de dados
