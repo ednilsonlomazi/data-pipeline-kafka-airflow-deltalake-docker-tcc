@@ -90,12 +90,15 @@ graph TD
     ct-minio -->|Fornece dados Delta| ct-dremio
     ct-minio -->|Fornece dados para validação| ct-visual
 
-    %% Estilização de nós críticos
-    style ct-minio fill:#f96,stroke:#333,stroke-width:2px,color:#fff
-    style ct-kafka fill:#5183ec,stroke:#333,stroke-width:2px,color:#fff
-    style ct-airflow-scheduler fill:#11a0bb,stroke:#333,stroke-width:2px,color:#fff
-    style ct-dremio fill:#4fc3f7,stroke:#333,stroke-width:1px
-    style ct-visual fill:#ff4b4b,stroke:#333,stroke-width:1px,color:#fff
+    %% Estilização baseada na Identidade Visual do Ubuntu
+    style ct-minio fill:#E95420,stroke:#2C001E,stroke-width:2px,color:#fff
+    style ct-kafka fill:#77216F,stroke:#2C001E,stroke-width:2px,color:#fff
+    style ct-airflow-scheduler fill:#2C001E,stroke:#77216F,stroke-width:2px,color:#fff
+    style ct-airflow-webserver fill:#5E2750,stroke:#2C001E,stroke-width:1px,color:#fff
+    style ct-dremio fill:#AEA79F,stroke:#333333,stroke-width:1px,color:#333
+    style ct-visual fill:#77216F,stroke:#E95420,stroke-width:1px,color:#fff
+    style ct-postgres fill:#AEA79F,stroke:#333333,stroke-width:1px,color:#333
+    style ct-zookeeper fill:#AEA79F,stroke:#333333,stroke-width:1px,color:#333
 
 ```
 
