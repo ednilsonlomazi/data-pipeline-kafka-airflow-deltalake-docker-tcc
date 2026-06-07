@@ -1,0 +1,5 @@
+streamlit==1.32.0
+pandas
+plotly
+pyspark==3.5.0
+delta-spark==3.0.0

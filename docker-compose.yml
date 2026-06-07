@@ -209,3 +209,31 @@ services:
       resources:
         limits:
           memory: 4GB
+
+
+  visual:
+    build:
+      context: .
+      dockerfile: Dockerfile.visual
+    container_name: ct-visual
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./scripts/visual:/app
+    depends_on:
+      - minio
+    restart: always
+
+  ct-dremio:
+      image: dremio/dremio-oss:latest
+      container_name: ct-dremio
+      ports:
+        - "9047:9047"  # Porta da Interface Web
+        - "31010:31010" # Porta para conexões JDBC/ODBC (se um dia precisar)
+      volumes:
+        - dremio_data:/opt/dremio/data # Volume para não perder as configurações
+
+      restart: always
+
+volumes:
+  dremio_data: # Adicione isso na seção global de volumes no fim do arquivo se não existir
