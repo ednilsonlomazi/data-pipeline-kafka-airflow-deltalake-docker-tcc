@@ -27,7 +27,29 @@ A arquitetura segue o padrão de medalhão (*Medallion Architecture*):
 
 ---
 
-```mermaid
+## 📊 Modelagem de Dados (Star Schema)
+Abaixo descrevo os objetos por camadas
+
+## Objetos por camadas
+### Raw
+* `l01`: Mensagens kafka armazenadas em delta tables de streaming de receitas
+* `l03`: Mensagens kafka armazenadas em delta tables de streaming de despesas
+
+### Truested
+* `tab_despesa`: Mensagens kafka tipadas e formatadas de valores de despesas
+* `tab_receita`: Mensagens kafka tipadas e formatadas de valores de despesas
+
+### Refined
+* `dim_contrato_divida`: Contrato de Dívidas.
+* `dim_favorecido`: Favorecido.
+* `dim_tipo_despesa`: Tipo de despesa.
+* `dim_alinea_receita`: .
+* `dim_item_receita`: Item da receita.
+* `dim_origem_receita`: Origem da Receita.
+* `dim_rubrica_receita`: Rubrica Receita.
+* `fato_despesa`: Valores de despesas
+* `fato_receita`: Valores de receitas
+
 graph TD
     %% Subgraph da Infraestrutura de Mensageria (Kafka)
     subgraph Ingestao_Streaming [Fluxo de Ingestão e Streaming]
@@ -73,32 +95,6 @@ graph TD
     style ct-airflow-scheduler fill:#11a0bb,stroke:#333,stroke-width:2px,color:#fff
     style ct-dremio fill:#4fc3f7,stroke:#333,stroke-width:1px
     style ct-visual fill:#ff4b4b,stroke:#333,stroke-width:1px,color:#fff
-```
-
-## 📊 Modelagem de Dados (Star Schema)
-Abaixo descrevo os objetos por camadas
-
-## Objetos por camadas
-### Raw
-* `l01`: Mensagens kafka armazenadas em delta tables de streaming de receitas
-* `l03`: Mensagens kafka armazenadas em delta tables de streaming de despesas
-
-### Truested
-* `tab_despesa`: Mensagens kafka tipadas e formatadas de valores de despesas
-* `tab_receita`: Mensagens kafka tipadas e formatadas de valores de despesas
-
-### Refined
-* `dim_contrato_divida`: Contrato de Dívidas.
-* `dim_favorecido`: Favorecido.
-* `dim_tipo_despesa`: Tipo de despesa.
-* `dim_alinea_receita`: .
-* `dim_item_receita`: Item da receita.
-* `dim_origem_receita`: Origem da Receita.
-* `dim_rubrica_receita`: Rubrica Receita.
-* `fato_despesa`: Valores de despesas
-* `fato_receita`: Valores de receitas
-
-
 
 ---
 
