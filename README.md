@@ -50,12 +50,13 @@ Abaixo descrevo os objetos por camadas
 * `fato_despesa`: Valores de despesas
 * `fato_receita`: Valores de receitas
 
+```mermaid
 graph TD
     %% Subgraph da Infraestrutura de Mensageria (Kafka)
     subgraph Ingestao_Streaming [Fluxo de Ingestão e Streaming]
         ct-zookeeper[ct-zookeeper<br/>Porta: 2181] -->|Gerencia| ct-kafka[ct-kafka<br/>Broker Port: 9092]
         ct-kafka -->|Healthcheck OK| ct-kafka-init(ct-kafka-init<br/>Cria tópicos: l01, l03, l06)
-        
+
         ct-kafka-producer[ct-kafka-producer<br/>Producer Service] -->|Dispara Payloads| ct-kafka
         ct-kafka -->|Consome Mensagens| ct-kafka-consumer[ct-kafka-consumer<br/>Consumer Service]
     end
@@ -71,7 +72,7 @@ graph TD
     %% Subgraph de Orquestração (Airflow)
     subgraph Orchestration_Orque [Orquestração e Processamento]
         ct-postgres[(ct-postgres<br/>Metadados Airflow)] -->|Depende| ct-airflow-init(ct-airflow-init<br/>Cria DB e User Admin)
-        
+
         ct-airflow-init -->|Sucesso| ct-airflow-webserver[ct-airflow-webserver<br/>Porta UI: 8081]
         ct-airflow-init -->|Sucesso| ct-airflow-scheduler[ct-airflow-scheduler<br/>Scheduler / DAGs PySpark]
     end
@@ -95,6 +96,8 @@ graph TD
     style ct-airflow-scheduler fill:#11a0bb,stroke:#333,stroke-width:2px,color:#fff
     style ct-dremio fill:#4fc3f7,stroke:#333,stroke-width:1px
     style ct-visual fill:#ff4b4b,stroke:#333,stroke-width:1px,color:#fff
+
+```
 
 ---
 
