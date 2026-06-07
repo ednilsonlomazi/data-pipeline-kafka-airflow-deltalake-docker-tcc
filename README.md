@@ -53,37 +53,37 @@ Abaixo descrevo os objetos por camadas
 ```mermaid
 graph TD
     %% Subgraph da Infraestrutura de Mensageria (Kafka)
-    subgraph Ingestao_Streaming [Fluxo de Ingestão e Streaming]
-        ct-zookeeper[ct-zookeeper<br/>Porta: 2181] -->|Gerencia| ct-kafka[ct-kafka<br/>Broker Port: 9092]
-        ct-kafka -->|Healthcheck OK| ct-kafka-init(ct-kafka-init<br/>Cria tópicos: l01, l03, l06)
-
-        ct-kafka-producer[ct-kafka-producer<br/>Producer Service] -->|Dispara Payloads| ct-kafka
-        ct-kafka -->|Consome Mensagens| ct-kafka-consumer[ct-kafka-consumer<br/>Consumer Service]
+    subgraph Ingestao_Streaming ["Fluxo de Ingestão e Streaming"]
+        ct-zookeeper["ct-zookeeper<br/>Porta: 2181"] -->|Gerencia| ct-kafka["ct-kafka<br/>Broker Port: 9092"]
+        ct-kafka -->|Healthcheck OK| ct-kafka-init("ct-kafka-init<br/>Cria tópicos: l01, l03, l06")
+        
+        ct-kafka-producer["ct-kafka-producer<br/>Producer Service"] -->|Dispara Payloads| ct-kafka
+        ct-kafka -->|Consome Mensagens| ct-kafka-consumer["ct-kafka-consumer<br/>Consumer Service"]
     end
 
     %% Subgraph da Camada de Armazenamento (MinIO)
-    subgraph Storage_Layer [Storage S3 Compatível]
-        ct-minio[(ct-minio<br/>API: 9000 | Console: 9001)]
+    subgraph Storage_Layer ["Storage S3 Compatível"]
+        ct-minio[("ct-minio<br/>API: 9000 | Console: 9001")]
     end
 
     %% Conexão do fluxo de entrada com o Storage
     ct-kafka-consumer -->|Grava arquivos brutos na RAW| ct-minio
 
     %% Subgraph de Orquestração (Airflow)
-    subgraph Orchestration_Orque [Orquestração e Processamento]
-        ct-postgres[(ct-postgres<br/>Metadados Airflow)] -->|Depende| ct-airflow-init(ct-airflow-init<br/>Cria DB e User Admin)
-
-        ct-airflow-init -->|Sucesso| ct-airflow-webserver[ct-airflow-webserver<br/>Porta UI: 8081]
-        ct-airflow-init -->|Sucesso| ct-airflow-scheduler[ct-airflow-scheduler<br/>Scheduler / DAGs PySpark]
+    subgraph Orchestration_Orque ["Orquestração e Processamento"]
+        ct-postgres[("ct-postgres<br/>Metadados Airflow")] -->|Depende| ct-airflow-init("ct-airflow-init<br/>Cria DB e User Admin")
+        
+        ct-airflow-init -->|Sucesso| ct-airflow-webserver["ct-airflow-webserver<br/>Porta UI: 8081"]
+        ct-airflow-init -->|Sucesso| ct-airflow-scheduler["ct-airflow-scheduler<br/>Scheduler / DAGs PySpark"]
     end
 
     %% Relação do Airflow/Spark com as Camadas do Lakehouse
     ct-airflow-scheduler -->|Lê RAW, processa e grava Trusted/Gold| ct-minio
 
     %% Subgraph de Consumo (Analytics / Serving)
-    subgraph Analytics_Serving [Camada de Consumo e Analytics]
-        ct-dremio[ct-dremio<br/>Virtualização SQL: 9047]
-        ct-visual[ct-visual<br/>Dashboard Streamlit: 8501]
+    subgraph Analytics_Serving ["Camada de Consumo e Analytics"]
+        ct-dremio["ct-dremio<br/>Virtualização SQL: 9047"]
+        ct-visual["ct-visual<br/>Dashboard Streamlit: 8501"]
     end
 
     %% Conexões de consumo de dados
