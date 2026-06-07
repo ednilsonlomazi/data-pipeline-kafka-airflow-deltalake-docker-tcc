@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from pyspark.sql import SparkSession
-import plotly.express as px
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -46,6 +45,13 @@ def carregar_dados_lakehouse():
         # Converte para Pandas para o Streamlit manipular de forma leve
         df_receita = df_receita_spark.toPandas()
         df_despesa = df_despesa_spark.toPandas()
+        
+        # Garante que as colunas de valores sejam numéricas no Pandas (evita falhas de soma)
+        if not df_receita.empty:
+            df_receita['val_efetivado'] = pd.to_numeric(df_receita['val_efetivado'], errors='coerce')
+        if not df_despesa.empty:
+            df_despesa['vr_amortizacao'] = pd.to_numeric(df_despesa['vr_amortizacao'], errors='coerce')
+            
     except Exception as e:
         st.error(f"Erro ao conectar com a camada Refined no MinIO: {e}")
         # Retorna dataframes vazios simulados caso o MinIO esteja fora do ar no momento
@@ -60,16 +66,15 @@ def carregar_dados_lakehouse():
 with st.spinner("Conectando ao MinIO e extraindo tabelas Delta..."):
     df_receita, df_despesa = carregar_dados_lakehouse()
 
-# --- CAMADA VISUAL: CARDS DE MÉTRICAS GERAIS ---
+# --- CAMADA VISUAL: CARDS DE AUDITORIA E VOLUMETRIA ---
 st.subheader("📌 Indicadores de Volumetria e Consistência (Auditoria)")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(label="Volumetria Fato Receita", value=f"{len(df_receita)} reg")
+    st.metric(label="Volumetria Fato Receita", value=f"{len(df_receita):,} reg".replace(",", "."))
 with col2:
-    st.metric(label="Volumetria Fato Despesa", value=f"{len(df_despesa)} reg")
+    st.metric(label="Volumetria Fato Despesa", value=f"{len(df_despesa):,} reg".replace(",", "."))
 with col3:
-    # Valida se existem chaves nulas (o que indicaria quebra de integridade referencial nas SKs)
     sks_validas_rec = df_receita['sk_dim_item_receita'].isnull().sum() == 0 if len(df_receita) > 0 else True
     st.metric(label="Integridade SKs Receita", value="100% OK" if sks_validas_rec else "Falha")
 with col4:
@@ -78,48 +83,40 @@ with col4:
 
 st.markdown("---")
 
-# --- CAMADA VISUAL: GRÁFICOS ANALÍTICOS ---
-st.subheader("📈 Análise Consolidada dos Dados Financeiros")
+# --- CAMADA VISUAL: CARDS DE VALORES NUMÉRICOS (SOLICITADO) ---
+st.subheader("💰 Totais Consolidados Financeiros")
+m_col1, m_col2 = st.columns(2)
 
-tab1, tab2 = st.tabs(["📊 Visão de Despesas", "💰 Visão de Receitas"])
+with m_col1:
+    total_receita = df_receita['val_efetivado'].sum() if not df_receita.empty else 0.0
+    st.metric(
+        label="Valor Total Efetivado (Receitas)", 
+        value=f"R$ {total_receita:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+
+with m_col2:
+    total_despesa = df_despesa['vr_amortizacao'].sum() if not df_despesa.empty else 0.0
+    st.metric(
+        label="Valor Total Amortizado (Despesas)", 
+        value=f"R$ {total_despesa:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+
+st.markdown("---")
+
+# --- CAMADA VISUAL: SÉRIES DE DADOS (ABAS COM TABELAS) ---
+st.subheader("📋 Visualização dos Dados Brutos Consolidados")
+tab1, tab2 = st.tabs(["📊 Tabela de Despesas", "💰 Tabela de Receitas"])
 
 with tab1:
     if not df_despesa.empty:
-        # Agrupamento simples para plotagem
-        df_despesa_grouped = df_despesa.groupby('ano_particao')['vr_amortizacao'].sum().reset_index()
-        
-        # Criação do gráfico usando Plotly Express (nativo e bonito no Streamlit)
-        fig_despesa = px.bar(
-            df_despesa_grouped, 
-            x='ano_particao', 
-            y='vr_amortizacao',
-            title="Evolução do Valor Total Pago em Despesas por Ano",
-            labels={'ano_particao': 'Ano de Partição (Gold)', 'vr_amortizacao': 'Total Pago (R$)'},
-            color_discrete_sequence=['#EF553B']
-        )
-        st.plotly_chart(fig_despesa, use_container_width=True)
-        
-        # Mostra uma amostra da tabela fato consolidada com as SKs em MD5
         st.write("**Amostra de Integridade Dimensional (Fato Despesa):**")
-        st.dataframe(df_despesa.head(5), use_container_width=True)
+        st.dataframe(df_despesa.head(100), use_container_width=True)
     else:
         st.warning("Aguardando ingestão de dados na tabela fato_despesa.")
 
 with tab2:
     if not df_receita.empty:
-        df_receita_grouped = df_receita.groupby('ano_particao')['val_efetivado'].sum().reset_index()
-        
-        fig_receita = px.line(
-            df_receita_grouped, 
-            x='ano_particao', 
-            y='val_efetivado',
-            title="Evolução da Arrecadação de Receitas por Ano",
-            labels={'ano_particao': 'Ano de Partição (Gold)', 'val_efetivado': 'Total Efetivado (R$)'},
-            markers=True
-        )
-        st.plotly_chart(fig_receita, use_container_width=True)
-        
         st.write("**Amostra de Integridade Dimensional (Fato Receita):**")
-        st.dataframe(df_receita.head(5), use_container_width=True)
+        st.dataframe(df_receita.head(100), use_container_width=True)
     else:
         st.warning("Aguardando ingestão de dados na tabela fato_receita.")

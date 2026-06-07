@@ -1,7 +1,7 @@
 # 🚀 Projeto de TCC: Modern Data Lakehouse com Spark, Delta Lake e Kafka
 
 ## 📝 Descrição do Projeto
-Este projeto implementa uma arquitetura de **Modern Data Lakehouse** para o processamento de fluxos de dados de tráfego veicular, sendo sustentado por uma **infraestrutura conteinerizada** via **Docker**, seguindo padrões de **DataOps**. Nesse sentido, ao utilizar o Docker Compose para orquestrar **Múltiplos Microserviços** (Kafka, Airflow e o storage MinIO), o projeto garante uma arquitetura reprodutível, isolada e escalável.
+Este projeto implementa uma arquitetura de **Modern Data Lakehouse** para o processamento de fluxos de dados financeiros, sendo sustentado por uma **infraestrutura conteinerizada** via **Docker**, seguindo padrões de **DataOps**. Nesse sentido, ao utilizar o Docker Compose para orquestrar **Múltiplos Microserviços** (Kafka, Airflow e o storage MinIO), o projeto garante uma arquitetura reprodutível, isolada e escalável.
 
 
 ---
@@ -11,7 +11,7 @@ A arquitetura segue o padrão de medalhão (*Medallion Architecture*):
 
 * **Landing/Raw Zone**: Dados brutos consumidos de tópicos Kafka e armazenados em **Delta Tables**.
 * **Trusted Zone**: Dados limpos e unificados, com schema definido e armazenados em **Delta Tables**.
-* **Refined Zone (Gold)**: Dados modelados em **Star Schema** (Modelo Dimensional) prontos para consumo por ferramentas de BI.
+* **Refined Zone (Gold)**: Dados modelados em **Star Schema** (Modelo Dimensional) prontos para consumo por ferramentas de BI, tambem em **Delta Tables**.
 
 ---
 
@@ -22,21 +22,38 @@ A arquitetura segue o padrão de medalhão (*Medallion Architecture*):
 * **Storage (S3 Compatible):** MinIO
 * **Mensageria:** Apache Kafka & Zookeeper
 * **Banco de Dados (Metadata Airflow):** PostgreSQL
-* **Infraestrutura:** Docker e DOcker Compose
+* **Infraestrutura:** Docker e Docker Compose
+* **Visualização:** Dremio e Framework Streamlit
 
 ---
 
 ## 📊 Modelagem de Dados (Star Schema)
-Atualmente (Projeto ainda em desenvolvimento), na camada **Refined** se encontram os **Modelos Dimensionais** abaixo:
+Atualmente, na camada **Refined** se encontram os **Modelos Dimensionais** abaixo:
 
-### Modelo de Trafego
-## Tabelas de Dimensão
-* `dim_praca`: Cadastro das praças de pedágio.
-* `dim_tipo_veiculo`: Categorias de veículos (2 Eixos, 3 Eixos, etc).
-* `dim_tipo_pagamento`: Formas de pagamento (Manual, Tag, etc).
+### Objetos por camadas
+## Raw
+* `l01`: Mensagens kafka armazenadas em delta tables de streaming de receitas
+* `l03`: Mensagens kafka armazenadas em delta tables de streaming de despesas
 
-## Tabela Fato
-* `fato_volume_trafego`: Contagem agregada de veículos por data e por dimensões.
+## Truested
+* `tab_despesa`: Mensagens kafka tipadas e formatadas de valores de despesas
+* `tab_receita`: Mensagens kafka tipadas e formatadas de valores de despesas
+
+## Refined
+# Dimensões
+* `dim_contrato_divida`: Contrato de Dívidas.
+* `dim_favorecido`: Favorecido.
+* `dim_tipo_despesa`: Tipo de despesa.
+* `dim_alinea_receita`: .
+* `dim_item_receita`: Item da receita.
+* `dim_origem_receita`: Origem da Receita.
+* `dim_rubrica_receita`: Rubrica Receita.
+
+# Fatos
+* `fato_despesa`: Valores de despesas
+* `fato_receita`: Valores de receitas
+
+
 
 ---
 
