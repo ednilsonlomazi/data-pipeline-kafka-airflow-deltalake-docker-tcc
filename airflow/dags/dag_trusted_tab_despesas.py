@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import pendulum
 
 local_tz = pendulum.timezone("America/Sao_Paulo")
-topicos = 'l01'
+topicos = 'l03'
 
 default_args = {
     'owner': 'tcc_projeto',
